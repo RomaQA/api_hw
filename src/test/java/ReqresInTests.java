@@ -1,93 +1,63 @@
+
+import lombok.CreateUser;
+import lombok.UserData;
 import org.junit.jupiter.api.Test;
 import static io.restassured.RestAssured.given;
 import static io.restassured.http.ContentType.JSON;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
 
 public class ReqresInTests {
 
     @Test
-    public void createUser(){
-        String data = "{\n" +
-                "    \"name\": \"morpheus\",\n" +
-                "    \"job\": \"leader\"\n" +
-                "}";
+    public void createUserWithLombok() {
+        CreateUser putData = new CreateUser();
+        putData.setName("morpheus");
+        putData.setJob("leader");
 
         given()
-                .log().uri()
-                .contentType(JSON)
-                .body(data)
+                .spec(Specs.request)
+                .body(putData)
                 .when()
-                .post("https://reqres.in/api/users")
+                .post("/users")
                 .then()
                 .log().status()
                 .log().body()
-                .statusCode(201)
-                .body("name", is("morpheus"));
+                .spec(Specs.responseSpec201)
+                .body("name", is("morpheus"))
+                .body("job", is("leader"));
+
+    }
+
+
+
+    @Test
+    public void getUserWithLombok() {
+        UserData data = Specs.request
+                .when()
+                .get("/users/2")
+                .then()
+                .spec(Specs.responseSpec)
+                .log()
+                .body()
+                .extract().as(UserData.class);
+
+        assertEquals(2, data.getUser().getId());
+
     }
 
     @Test
-    public void deleteUser(){
+    void checkEmail() {
         given()
-                .log().uri()
+                .spec(Specs.request)
                 .when()
-                .delete("https://reqres.in/api/users2")
+                .get("/users?page=2")
                 .then()
-                .log().status()
-                .log().body()
-                .statusCode(204);
+                .spec(Specs.responseSpec)
+                .body("data.findAll{it.id == 8}.email", hasItem("lindsay.ferguson@reqres.in"));
     }
-
-    @Test
-    public void putUser(){
-        String data = "{\n" +
-                "    \"name\": \"morpheus\",\n" +
-                "    \"job\": \"zion resident\"\n" +
-                "}";
-
-        given()
-                .log().uri()
-                .contentType(JSON)
-                .body(data)
-                .when()
-                .put("https://reqres.in/api/users/2")
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("name", is("morpheus"));
-    }
-
-    @Test
-    public void getUser(){
-        given()
-                .log().uri()
-                .when()
-                .get("https://reqres.in/api/users?page=2")
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("page", is(2));
-    }
-
-    @Test
-    public void patchUser(){
-        String data = "{\n" +
-                "    \"name\": \"morpheus\",\n" +
-                "    \"job\": \"zion resident\"\n" +
-                "}";
-
-        given()
-                .log().uri()
-                .contentType(JSON)
-                .body(data)
-                .when()
-                .patch("https://reqres.in/api/users/2")
-                .then()
-                .log().status()
-                .log().body()
-                .statusCode(200)
-                .body("name", is("morpheus"));
-    }
-    }
+}
 
